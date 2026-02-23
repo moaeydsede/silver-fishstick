@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  
+<script>
+/* JK hard reset once per version (fix stuck Service Worker / cache on mobile) */
+(async ()=>{
+  try {
+    const V="17";
+    const key="jk_sw_v";
+    const prev=localStorage.getItem(key);
+    if(prev!==V && "serviceWorker" in navigator){
+      localStorage.setItem(key,V);
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+      if(window.caches){
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k=>caches.delete(k)));
+      }
+      location.reload();
+    }
+  } catch(e) {}
+})();
+</script>
+<meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <meta name="theme-color" content="#0f1220"/>
+  <title>لوحة الإدارة | JoodKids</title>
+  <link rel="icon" href="favicon.png" type="image/png"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=17"/>
+  <style>
+    body{background:#0f1220;color:#fff}
+    .wrap2{max-width:1100px;margin:0 auto;padding:16px 14px}
+    .panel{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,.35);margin-top:12px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .field{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff;padding:12px;font-family:inherit;outline:none}
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;padding:10px 12px;font-weight:900;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+    .btnP{border-color:rgba(124,92,255,.45);background:linear-gradient(135deg, rgba(124,92,255,.55), rgba(42,209,255,.25))}
+    .btnD{border-color:rgba(255,77,109,.35);background:rgba(255,77,109,.12)}
+    .note{color:rgba(255,255,255,.78);font-size:12px;line-height:1.7}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{border-bottom:1px solid rgba(255,255,255,.10);padding:10px;text-align:right;vertical-align:top}
+    .thumbs{display:flex;gap:8px;flex-wrap:wrap}
+    .timg{width:54px;height:54px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06)}
+    .timg img{width:100%;height:100%;object-fit:cover;display:block}
+    @media (max-width:900px){.grid2{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap2">
+    <div class="btnRow">
+      <a class="btn" href="index.html">فتح الموقع</a>
+      <a class="btn" href="import.html">استيراد 500</a>
+      <button class="btn btnD" id="logoutBtn">خروج</button>
+    </div>
+
+    <div class="panel" style="margin-top:10px"><div class="note">ملاحظة: لازم تسجّل دخول (Email/Password من Firebase Auth). بعد الدخول سيظهر قسم المنتجات + أزرار التصدير/الاستيراد.</div></div>
+
+    <div class="panel" id="loginPanel">
+      <div style="font-weight:1000;margin-bottom:10px">تسجيل دخول</div>
+      <div class="grid2">
+        <input class="field" id="email" placeholder="Email"/>
+        <input class="field" id="password" placeholder="Password" type="password"/>
+      </div>
+      <button class="btn btnP" id="loginBtn" style="margin-top:10px">دخول</button>
+      <div class="note" style="margin-top:8px">أنشئ مستخدم Email/Password من Firebase Authentication</div>
+    </div>
+
+    <div class="panel" id="companyPanel" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="font-weight:1000">بيانات الشركة</div>
+        <button class="btn btnP" id="saveCompanyBtn">حفظ</button>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <input class="field" id="cName" placeholder="اسم الشركة"/>
+        <input class="field" id="cPhone" placeholder="رقم الهاتف"/>
+        <input class="field" id="cWhatsApp" placeholder="رقم واتساب (بدون +)"/>
+        <input class="field" id="cTagline" placeholder="Tagline"/>
+        <input class="field" id="cDelivery" placeholder="نص التوصيل"/>
+        <input class="field" id="cMap" placeholder="رابط الخريطة"/>
+        <input class="field" id="cFb" placeholder="Facebook"/>
+        <input class="field" id="cIg" placeholder="Instagram"/>
+        <input class="field" id="cTg" placeholder="Telegram"/>
+        <input class="field" id="cFactoryMap" placeholder="رابط خريطة المصنع"/>
+        <input class="field" id="cShopMap" placeholder="رابط خريطة المحل"/>
+      </div>
+      <textarea class="field" id="cDesc" placeholder="وصف الشركة" style="margin-top:10px;min-height:90px"></textarea>
+    </div>
+
+    <div class="panel" id="productsPanel" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="font-weight:1000">المنتجات + الصور</div>
+        <div class="btnRow">
+          <button class="btn btnP" id="newBtn">منتج جديد</button>
+          <button class="btn" id="refreshBtn">تحديث</button>
+          <button class="btn" id="exportXlsxBtn">تصدير Excel</button>
+          <button class="btn" id="exportCsvBtn">تصدير CSV</button>
+        </div>
+      </div>
+
+      <div class="note" style="margin-top:8px">التصنيف تلقائي: الكود &lt; 1000 → أول رقم، الكود ≥ 1000 → أول رقمين</div>
+
+      <div class="panel">
+        <div style="font-weight:1000;margin-bottom:10px">نموذج المنتج</div>
+        <div class="grid2">
+          <input class="field" id="pId" placeholder="ID (اتركه فارغ للتلقائي)"/>
+          <input class="field" id="pCode" placeholder="الكود (رقم) مثل 600 أو 1200" inputmode="numeric"/>
+          <input class="field" id="pName" placeholder="اسم المنتج"/>
+          <input class="field" id="pPrice" placeholder="السعر" inputmode="numeric"/>
+          <input class="field" id="pCurrency" placeholder="العملة" value="EGB"/>
+          <input class="field" id="pTags" placeholder="Tags: offer,new,popular"/>
+        </div>
+        <textarea class="field" id="pDesc" placeholder="وصف المنتج" style="margin-top:10px;min-height:80px"></textarea>
+        <input class="field" id="pSizes" placeholder="المقاسات مثال: 6,12,18" style="margin-top:10px"/>
+
+        <div style="margin-top:10px">
+          <div style="font-weight:900;margin-bottom:6px">الصور</div>
+          <input class="field" id="pImages" type="file" accept="image/*"/>
+          <div class="note">ارفع صور متعددة. اضغط على الصورة المصغرة لحذفها.</div>
+          <div class="thumbs" id="imageThumbs" style="margin-top:10px"></div>
+        </div>
+
+        <div class="btnRow" style="margin-top:12px">
+          <button class="btn btnP" id="saveProductBtn">حفظ المنتج</button>
+          <button class="btn btnD" id="deleteProductBtn">حذف المنتج</button>
+          <button class="btn" id="clearFormBtn">مسح النموذج</button>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;overflow:auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>الصورة</th><th>الكود</th><th>الاسم</th><th>التصنيف</th><th>السعر</th><th>Tags</th><th>إجراء</th>
+            </tr>
+          </thead>
+          <tbody id="productsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js?v=17"></script>
+  <script src="cloudinary-config.js?v=17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
+  <script src="admin.js?v=17"></script>
+</body>
+</html>
