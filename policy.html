@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  
+<script>
+/* JK hard reset once per version (fix stuck Service Worker / cache on mobile) */
+(async ()=>{
+  try {
+    const V="22";
+    const key="jk_sw_v";
+    const prev=localStorage.getItem(key);
+    if(prev!==V && "serviceWorker" in navigator){
+      localStorage.setItem(key,V);
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+      if(window.caches){
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k=>caches.delete(k)));
+      }
+      location.reload();
+    }
+  } catch(e) {}
+})();
+</script>
+<meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>سياسة الدفع والاسترجاع | JoodKids</title>
+  <link rel="icon" href="favicon.png" type="image/png"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="styles.css?v=22"/>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap topInner">
+      <a class="brand" href="index.html"><img src="favicon.png" class="logo" alt=""/><div><div class="brandName">JoodKids</div><div class="brandTag muted">Kids clothes</div></div></a>
+      <a class="btn" href="index.html">الرجوع للمتجر</a>
+    </div>
+  </header>
+
+  <main class="wrap" style="padding:16px 0 40px">
+    <h1 style="margin:10px 0 6px">سياسة الدفع والاسترجاع</h1>
+    <div class="card" style="padding:14px">
+      <div class="policyBox">
+        <h3 style="margin:0 0 8px">سياسة الاستبدال والاسترجاع</h3>
+        <p>يمكنك عمل طلب استرجاع او استبدال للمنتجات خلال <b>7 يوم</b>.</p>
+        <p>وفي حالات عيوب الصناعة <b>10 يوم</b> من وقت وصول الطلب.</p>
+        <p>عند إرجاع المنتج، تأكد من وجود جميع الملحقات الخاصة بالطلب بحالتها السليمة، وأن المنتج في عبوته الأصلية وبتغليفه الأصلي، والملابس بحالتها كما وصلت للعميل غير مستعملة أو ملبوسة أو مغسولة.</p>
+        <p><b>تنويه:</b> عند رجوع البضاعة بدون تبليغنا قبل الاسترجاع بـ <b>3 أيام</b> على الأقل سوف يتم خصم قيمة الشحن ذهاب وإياب من العربون المدفوع لدينا.</p>
+        <p>لديك <b>7 يوم</b> من تاريخ استلامك أي سلعة لتقدم طلب إرجاعها.</p>
+        <hr/>
+        <h3 style="margin:0 0 8px">طرق الدفع</h3>
+        <ol style="margin:0;padding-inline-start:22px">
+          <li>نقداً من خلال أحد فروعنا</li>
+          <li>تحويلات بنكية</li>
+          <li>انستا بي</li>
+          <li>محافظ إلكترونية (فودافون كاش أو اتصالات كاش أو أورنج كاش)</li>
+          <li>نعتذر من عملائنا الكرام البيع بالآجل لأي سبب كان</li>
+        </ol>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footerInner">
+      <div>
+        <div class="footerTitle">روابط</div>
+        <a href="contact.html">تواصل معنا</a>
+        <a href="index.html">المتجر</a>
+      </div>
+      <div class="muted">© <span id="year"></span> JoodKids</div>
+    </div>
+  </footer>
+
+  <script>document.getElementById("year").textContent=new Date().getFullYear();</script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js?v=22").then((reg)=>{
+        try{ reg.update(); }catch(e){}
+        const kick = () => {
+          if(reg.waiting){ try{ reg.waiting.postMessage('SKIP_WAITING'); }catch(e){} }
+        };
+        kick();
+        reg.addEventListener('updatefound', ()=>{
+          const sw = reg.installing;
+          if(!sw) return;
+          sw.addEventListener('statechange', ()=>{ if(sw.state==='installed') kick(); });
+        });
+        navigator.serviceWorker.addEventListener("controllerchange", ()=>{ window.location.reload(); });
+      }).catch(()=>{});
+    }
+  </script>
+</body>
+</html>

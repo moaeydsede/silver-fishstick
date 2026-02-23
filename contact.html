@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  
+<script>
+/* JK hard reset once per version (fix stuck Service Worker / cache on mobile) */
+(async ()=>{
+  try {
+    const V="22";
+    const key="jk_sw_v";
+    const prev=localStorage.getItem(key);
+    if(prev!==V && "serviceWorker" in navigator){
+      localStorage.setItem(key,V);
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+      if(window.caches){
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k=>caches.delete(k)));
+      }
+      location.reload();
+    }
+  } catch(e) {}
+})();
+</script>
+<meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>تواصل معنا | JoodKids</title>
+  <link rel="icon" href="favicon.png" type="image/png"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="styles.css?v=22"/>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
+  <script src="firebase-config.js?v=22"></script>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap topInner">
+      <a class="brand" href="index.html">
+        <img src="favicon.png" class="logo" alt=""/>
+        <div>
+          <div class="brandName" id="cTitle">JoodKids</div>
+          <div class="brandTag muted" id="cTag">Kids clothes</div>
+        </div>
+      </a>
+      <a class="btn" href="index.html">الرجوع للمتجر</a>
+    </div>
+  </header>
+
+  <main class="wrap" style="padding:16px 0 40px">
+    <h1 style="margin:10px 0 6px">تواصل معنا</h1>
+
+    <div class="card" style="padding:14px;margin-top:10px">
+      <div style="display:grid;gap:10px">
+        <div class="muted" id="cDesc">—</div>
+
+        <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr" class="grid2">
+          <a class="btn btnP" id="callBtn" href="#" target="_blank" rel="noreferrer">📞 اتصال</a>
+          <a class="btn" id="waBtn" href="#" target="_blank" rel="noreferrer">💬 واتساب</a>
+          <a class="btn" id="fbBtn" href="#" target="_blank" rel="noreferrer">Facebook</a>
+          <a class="btn" id="igBtn" href="#" target="_blank" rel="noreferrer">Instagram</a>
+          <a class="btn" id="tgBtn" href="#" target="_blank" rel="noreferrer">Telegram</a>
+          <a class="btn" id="mapMainBtn" href="#" target="_blank" rel="noreferrer">📍 موقعنا</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;gap:14px;margin-top:14px">
+      <div class="card" style="padding:14px">
+        <h2 style="margin:0 0 10px;font-size:18px">موقع المصنع</h2>
+        <div class="mapBox"><iframe id="factoryMapFrame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn btnP" id="factoryOpen" href="#" target="_blank" rel="noreferrer">فتح على الخرائط</a>
+        </div>
+      </div>
+
+      <div class="card" style="padding:14px">
+        <h2 style="margin:0 0 10px;font-size:18px">موقع المحل</h2>
+        <div class="mapBox"><iframe id="shopMapFrame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn btnP" id="shopOpen" href="#" target="_blank" rel="noreferrer">فتح على الخرائط</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footerInner">
+      <div>
+        <div class="footerTitle">روابط</div>
+        <a href="index.html">المتجر</a>
+        <a href="policy.html">سياسة الدفع والاسترجاع</a>
+      </div>
+      <div class="muted">© <span id="year"></span> <span id="cNameFoot">JoodKids</span></div>
+    </div>
+  </footer>
+
+  <script src="contact.js?v=22"></script>
+  <script>document.getElementById("year").textContent=new Date().getFullYear();</script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js?v=22").then((reg)=>{
+        try{ reg.update(); }catch(e){}
+        const kick = () => {
+          if(reg.waiting){ try{ reg.waiting.postMessage('SKIP_WAITING'); }catch(e){} }
+        };
+        kick();
+        reg.addEventListener('updatefound', ()=>{
+          const sw = reg.installing;
+          if(!sw) return;
+          sw.addEventListener('statechange', ()=>{ if(sw.state==='installed') kick(); });
+        });
+        navigator.serviceWorker.addEventListener("controllerchange", ()=>{ window.location.reload(); });
+      }).catch(()=>{});
+    }
+  </script>
+</body>
+</html>

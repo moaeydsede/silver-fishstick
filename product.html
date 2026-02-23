@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  
+<script>
+/* JK hard reset once per version (fix stuck Service Worker / cache on mobile) */
+(async ()=>{
+  try {
+    const V="22";
+    const key="jk_sw_v";
+    const prev=localStorage.getItem(key);
+    if(prev!==V && "serviceWorker" in navigator){
+      localStorage.setItem(key,V);
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+      if(window.caches){
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k=>caches.delete(k)));
+      }
+      location.reload();
+    }
+  } catch(e) {}
+})();
+</script>
+<meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>تفاصيل المنتج | JoodKids</title>
+  <link rel="icon" href="favicon.png" type="image/png"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="styles.css?v=22"/>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
+  <script src="firebase-config.js?v=22"></script>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap topInner">
+      <a class="brand" href="index.html">
+        <img src="favicon.png" class="logo" alt=""/>
+        <div>
+          <div class="brandName" id="pCompany">JoodKids</div>
+          <div class="brandTag muted" id="pCompanyTag">Kids clothes</div>
+        </div>
+      </a>
+      <div style="display:flex;gap:10px;align-items:center">
+        <a class="btn" href="index.html">الرجوع</a>
+        <button class="btn btnP" id="openCartBtn" type="button">السلة</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap" style="padding:16px 0 60px">
+    <div class="card" style="padding:14px">
+      <div style="display:grid;gap:14px;grid-template-columns:1fr 1fr" class="grid2">
+        <div>
+          <div class="thumb" style="border-radius:16px;overflow:hidden">
+            <img id="pImg" class="zoomable" alt="" style="width:100%;height:auto;display:block;object-fit:contain;background:#f7f7f7"/>
+            <div class="tag" id="pCodeTag" style="top:10px;right:10px">—</div>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap" id="pGallery"></div>
+        </div>
+        <div>
+          <h1 id="pName" style="margin:0 0 6px;font-size:22px">—</h1>
+          <div class="muted" id="pMeta">—</div>
+          <div style="margin-top:10px;font-size:20px;font-weight:900" id="pPrice">—</div>
+          <div style="margin-top:10px" class="muted" id="pDesc">—</div>
+
+          <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn" id="decQty" type="button">-</button>
+            <div style="min-width:48px;text-align:center;font-weight:900" id="qtyNum">1</div>
+            <button class="btn" id="incQty" type="button">+</button>
+            <button class="btn btnP" id="addToCartBtn" type="button">إضافة للسلة</button>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn" id="shareBtn" type="button">مشاركة</button>
+            <a class="btn" id="waOrderBtn" href="#" target="_blank" rel="noreferrer" style="display:none">اطلب واتساب</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox" hidden>
+      <button class="lbClose" id="lbClose" type="button" aria-label="إغلاق">×</button>
+      <img id="lbImg" alt=""/>
+    </div>
+  </main>
+
+  <script src="product.js?v=22"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js?v=22").then((reg)=>{
+        try{ reg.update(); }catch(e){}
+        const kick = () => {
+          if(reg.waiting){ try{ reg.waiting.postMessage('SKIP_WAITING'); }catch(e){} }
+        };
+        kick();
+        reg.addEventListener('updatefound', ()=>{
+          const sw = reg.installing;
+          if(!sw) return;
+          sw.addEventListener('statechange', ()=>{ if(sw.state==='installed') kick(); });
+        });
+        navigator.serviceWorker.addEventListener("controllerchange", ()=>{ window.location.reload(); });
+      }).catch(()=>{});
+    }
+  </script>
+</body>
+</html>

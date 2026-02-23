@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  
+<script>
+  // Diagnostics: if JS files fail to load (usually due to missing upload / wrong GitHub Pages root)
+  window.__JK_LOADED = window.__JK_LOADED || {};
+  window.__JK_ERR = function(file){
+    window.__JK_LOADED[file] = false;
+    console.error('JK: failed to load', file);
+  };
+  window.__JK_OK = function(file){
+    window.__JK_LOADED[file] = true;
+    window.__JK_ANY_LOADED = true;
+  };
+  // After a moment, if main app didn't start, show a clear hint to the user.
+  setTimeout(function(){
+    if(window.__JK_LOADED["app.js"]!==true){
+      var box = document.createElement('div');
+      box.style.cssText = 'position:fixed;inset:12px;z-index:9999;background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,.12);box-shadow:0 20px 60px rgba(0,0,0,.25);padding:14px;font-family:system-ui,"Cairo",sans-serif;direction:rtl;';
+      box.innerHTML = '<div style="font-weight:900;font-size:16px;margin-bottom:6px">⚠️ الملفّات لم تُحمّل</div>'
+        + '<div style="font-size:13px;line-height:1.7;color:#333">الصفحة فتحت لكن الأزرار لا تعمل لأن ملفات الجافاسكربت (مثل <b>app.js</b>) لم تُحمّل أو لم تُرفع بنفس مستوى <b>index.html</b> داخل الريبو.</div>'
+        + '<div style="margin-top:10px;font-size:13px;line-height:1.7;color:#333">تأكد أن هذه الملفات موجودة بجانب index.html مباشرة: <b>app.js</b>, <b>styles.css</b>, <b>firebase-config.js</b>, <b>sw.js</b>…</div>'
+        + '<div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">'
+        + '<button id="jkCloseDiag" style="padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:#f6f6f6;font-weight:800;cursor:pointer">إغلاق</button>'
+        + '<button id="jkHardReload" style="padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);background:#111;color:#fff;font-weight:900;cursor:pointer">تحديث قوي</button>'
+        + '</div>';
+      document.body.appendChild(box);
+      document.getElementById('jkCloseDiag').onclick = function(){ box.remove(); };
+      document.getElementById('jkHardReload').onclick = async function(){
+        try{
+          // full reset: unregister service workers + clear caches
+          localStorage.removeItem('jk_sw_v');
+          if('serviceWorker' in navigator){
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(r=>r.unregister()));
+          }
+          if(window.caches){
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k=>caches.delete(k)));
+          }
+        }catch(e){}
+        // cache-bust
+        location.href = location.pathname + '?reset=' + Date.now() + location.hash;
+      };
+    }
+  }, 2500);
+</script>
+
+<script>
+/* JK hard reset once per version (fix stuck Service Worker / cache on mobile) */
+(async ()=>{
+  try {
+    const V="22";
+    const key="jk_sw_v";
+    const prev=localStorage.getItem(key);
+    if(prev!==V && "serviceWorker" in navigator){
+      localStorage.setItem(key,V);
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+      if(window.caches){
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k=>caches.delete(k)));
+      }
+      location.reload();
+    }
+  } catch(e) {}
+})();
+</script>
+<meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <meta name="theme-color" content="#ffffff"/>
+  <title>JoodKids | ملابس أطفال</title>
+  <link rel="icon" href="favicon.png" type="image/png"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=22"/>
+</head>
+<body>
+  <div class="topStrip">
+    <div class="wrap topStripInner">
+      <div class="miniLinks"><span id="adminLinks" style="display:none">
+        <a href="admin.html" class="adminLink">لوحة الإدارة</a>
+        <a href="import.html" class="adminLink">استيراد 500</a>
+      </span></div>
+      <div class="phone" id="companyPhone">☎ —</div>
+    </div>
+  </div>
+
+  <header class="header">
+    <div class="wrap headerInner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">JK</div>
+        <div>
+          <div class="brandName" id="companyName">JoodKids</div>
+          <div class="brandTag" id="companyTag">Kids clothes</div>
+        </div>
+      </div>
+      <div class="headerActions">
+        <button class="ghostBtn" id="openFilters">☰ التصنيفات</button>
+        <div class="search">
+          <input id="searchInput" placeholder="ابحث… (اسم/كود)" type="search"/>
+          <button id="clearSearch" aria-label="مسح">✕</button>
+        </div>
+        <button class="cartBtn" id="openCart">🛒 <span>السلة</span><span class="badge" id="cartCount">0</span></button>
+      </div>
+    </div>
+  </header>
+
+  <section class="pageHead">
+    <div class="wrap">
+      <div class="breadcrumb">
+        <span class="crumb current" id="crumbCat">كل المنتجات</span>
+      </div>
+      <h1 class="pageTitle">ملابس أطفال</h1>
+      <p class="pageSub" id="companyDesc">—</p>
+    </div>
+  </section>
+
+  <main class="wrap layout">
+    <aside class="sidebar">
+      <div class="sideCard">
+        <div class="sideTitle">التصنيفات (حسب الكود)</div>
+        <div class="muted small" style="margin-bottom:8px">الكود &lt; 1000 → أول رقم • الكود ≥ 1000 → أول رقمين</div>
+        <div class="sideList" id="categoryList"></div>
+      </div>
+
+      <div class="sideCard">
+        <div class="sideTitle">فرز</div>
+        <select id="sortSelect" class="select">
+          <option value="reco">مقترح</option>
+          <option value="price_asc">السعر: من الأقل</option>
+          <option value="price_desc">السعر: من الأعلى</option>
+          <option value="name">الاسم</option>
+          <option value="code">الكود</option>
+        </select>
+      </div>
+
+      <div class="sideCard">
+        <div class="sideTitle">تصفية</div>
+        <div class="pills">
+          <button class="pill active" data-tag="all">الكل</button>
+          <button class="pill" data-tag="offer">عروض</button>
+          <button class="pill" data-tag="new">جديد</button>
+          <button class="pill" data-tag="popular">الأكثر</button>
+        </div>
+      </div>
+    </aside>
+
+    <section class="content">
+      <div class="toolbar">
+        <div class="count muted" id="resultCount">—</div>
+        <div class="delivery muted" id="companyDelivery">🚚 —</div>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="empty" id="emptyState" hidden>
+        <div class="sideCard">
+          <div style="font-weight:1000">لا يوجد نتائج</div>
+          <div class="muted">جرّب بحث آخر.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footerInner">
+      <div>
+        <div class="footerTitle">بيانات الشركة</div>
+        <div class="muted" id="footerCompany">—</div>
+      </div>
+      <div>
+        <div class="footerTitle">روابط</div>
+        <a href="contact.html">تواصل معنا</a>
+        <a href="policy.html">سياسة الدفع والاسترجاع</a>
+        <a href="#" id="fbLink" target="_blank" rel="noreferrer">Facebook</a>
+        <a href="#" id="igLink" target="_blank" rel="noreferrer">Instagram</a>
+        <a href="#" id="tgLink" target="_blank" rel="noreferrer">Telegram</a>
+        <a href="#" id="factoryMapLink" target="_blank" rel="noreferrer">موقع المصنع</a>
+        <a href="#" id="shopMapLink" target="_blank" rel="noreferrer">موقع المحل</a>
+      </div>
+      <div>
+        <div class="footerTitle">الدفع</div>
+        <div class="payRow">
+<img src="pay-instapay.svg" alt="InstaPay"/>
+          <img src="pay-vodafonecash.svg" alt="Vodafone Cash"/>
+          <img src="pay-etisalatcash.svg" alt="Etisalat Cash"/>
+          <img src="pay-orangecash.svg" alt="Orange Cash"/>
+        </div>
+      </div>
+    </div>
+    <div class="wrap copyright muted">© <span id="year"></span> <span id="companyCopy">JoodKids</span></div>
+  </footer>
+
+  <div id="mobileCartBar" style="position:fixed;left:12px;right:12px;bottom:12px;z-index:110;display:none">
+    <button id="mobileCartBtn" class="primary" style="margin:0;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <span>فتح السلة</span>
+      <span style="display:flex;gap:10px;align-items:center">
+        <span class="badge" id="mobileCartCount">0</span>
+        <span class="total" id="mobileCartTotal">0</span>
+      </span>
+    </button>
+  </div>
+
+
+  <!-- Install bar -->
+  <div id="installBar">
+    <div>
+      <div style="font-weight:1000">تثبيت التطبيق</div>
+      <div class="muted small">ثبّت JoodKids على شاشة الموبايل</div>
+    </div>
+    <button class="btn" id="installBtn">تثبيت</button>
+    <button class="x" id="installClose">✕</button>
+  </div>
+
+  <!-- Mobile filters -->
+  <aside class="drawer" id="filtersDrawer" aria-hidden="true">
+    <div class="drawerBg" id="filtersBg"></div>
+    <div class="drawerPanel">
+      <div class="drawerHead">
+        <div class="drawerTitle">التصنيفات</div>
+        <button class="xBtn" id="closeFilters">✕</button>
+      </div>
+      <div class="drawerBody">
+        <div class="sideList" id="categoryListMobile"></div>
+        <select id="sortSelectMobile" class="select" style="margin-top:10px">
+          <option value="reco">مقترح</option>
+          <option value="price_asc">السعر: من الأقل</option>
+          <option value="price_desc">السعر: من الأعلى</option>
+          <option value="name">الاسم</option>
+          <option value="code">الكود</option>
+        </select>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Product modal -->
+  <aside class="modal" id="productModal" aria-hidden="true">
+    <div class="modalBg" id="productBg"></div>
+    <div class="modalPanel">
+      <div class="modalHead">
+        <div>
+          <div class="mTitle" id="mName">—</div>
+          <div class="muted small" id="mMeta">—</div>
+        </div>
+        <button class="xBtn" id="closeProduct">✕</button>
+      </div>
+      <div class="mBody">
+        <div class="mMedia">
+          <img id="mImg" alt=""/>
+          <div class="tagRow" id="mTags"></div>
+          <div class="gallery" id="mGallery"></div>
+        </div>
+        <div class="mInfo">
+          <div class="muted" id="mDesc"></div>
+          <div class="optTitle">المقاسات</div>
+          <div class="optGrid" id="sizeGrid"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;flex-wrap:wrap">
+            <div class="price" id="mPrice">0</div>
+            <div class="qty">
+              <button class="qBtn" id="decQty">−</button>
+              <span class="qNum" id="qtyNum">1</span>
+              <button class="qBtn" id="incQty">+</button>
+            </div>
+          </div>
+          <button class="primary" id="addToCartBtn">إضافة للسلة</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Cart drawer -->
+  <aside class="drawer" id="cartDrawer" aria-hidden="true">
+    <div class="drawerBg" id="cartBg"></div>
+    <div class="drawerPanel cartPanel">
+      <div class="drawerHead">
+        <div class="drawerTitle">السلة</div>
+        <button class="xBtn" id="closeCart">✕</button>
+      </div>
+      <div class="drawerBody">
+        <div class="cartItems" id="cartItems"></div>
+        <div class="line"></div>
+        <div class="row"><span class="muted">الإجمالي</span><span class="total" id="cartTotal">0</span></div>
+        <textarea class="field" id="note" placeholder="ملاحظة (اختياري)"></textarea>
+        <div class="row2">
+          <button class="danger" id="clearCart">تفريغ</button>
+          <button class="primary" id="waOrder">إتمام الطلبية</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+
+  <!-- Checkout modal -->
+  <aside class="modal" id="checkoutModal" aria-hidden="true">
+    <div class="modalBg" id="checkoutBg"></div>
+    <div class="modalPanel" style="max-width:520px">
+      <div class="modalHead">
+        <div>
+          <div class="mTitle">بيانات العميل</div>
+          <div class="muted small">أدخل البيانات لإتمام الطلبية ثم إرسالها على واتساب</div>
+        </div>
+        <button class="xBtn" id="closeCheckout">✕</button>
+      </div>
+      <div class="mBody" style="display:block">
+        <div class="sideCard" style="margin-bottom:10px">
+          <div class="muted small" style="margin-bottom:8px">طريقة الدفع</div>
+          <div class="payRow" style="justify-content:flex-start;gap:8px;flex-wrap:wrap">
+<img src="pay-instapay.svg" alt="InstaPay" title="InstaPay"/>
+            <img src="pay-vodafonecash.svg" alt="Vodafone Cash" title="Vodafone Cash"/>
+            <img src="pay-etisalatcash.svg" alt="Etisalat Cash" title="Etisalat Cash"/>
+            <img src="pay-orangecash.svg" alt="Orange Cash" title="Orange Cash"/>
+          </div>
+          <select class="field" id="payMethod" style="margin-top:10px">
+            <option value="Cash - Branch">نقداً من خلال أحد فروعنا</option>
+            <option value="Bank Transfer">تحويلات بنكية</option>
+            <option value="InstaPay">انستا بي (InstaPay)</option>
+            <option value="Vodafone Cash">فودافون كاش</option>
+            <option value="Etisalat Cash">اتصالات كاش</option>
+            <option value="Orange Cash">أورنج كاش</option>
+            <option value="Shipping Policy">بوليصة شحن (تحصيل/عربون)</option>
+          </select>
+          <div class="policyBox">
+            <div class="policyTitle">سياسة الدفع والاسترجاع</div>
+            <div class="policyText">
+              يمكنك عمل طلب استرجاع او استبدال للمنتجات خلال <b>7 يوم</b>.<br>
+              وفي حالات عيوب الصناعة: <b>10 يوم</b> من وقت وصول الطلب.<br><br>
+              عند إرجاع المنتج، تأكد من وجود جميع الملحقات الخاصة بالطلب بحالتها السليمة وأن المنتج في عبوته الأصلية وبتغليفه الأصلي، والملابس بحالتها كما وصلت للعميل غير مستعملة أو ملبوسة أو مغسولة.<br><br>
+              <b>الاستبدال والاسترجاع</b> على الملابس الخارجية فقط والتي بدون خصم.<br><br>
+              <b>طرق الدفع:</b><br>
+              1- نقداً من خلال أحد فروعنا<br>
+              2- تحويلات بنكية<br>
+              3- انستا بي<br>
+              4- محافظ إلكترونية (فودافون كاش أو اتصالات كاش أو أورنج كاش)<br>
+              5- نعتذر من عملائنا الكرام البيع بالآجل لأي سبب كان<br><br>
+              <b>تنويه:</b> عند رجوع البضاعة بدون تبليغنا قبل الاسترجاع بـ <b>3 أيام</b> على الأقل سوف يتم خصم قيمة الشحن ذهاب وإياب من العربون المدفوع لدينا.<br><br>
+              لديك <b>7 يوم</b> من تاريخ استلامك أي سلعة لتقدم طلب ارجاعها.
+            </div>
+          </div>
+        </div>
+
+        <input class="field" id="cName" placeholder="اسم العميل" />
+        <input class="field" id="cPhone" placeholder="رقم الموبايل" inputmode="tel" style="margin-top:10px"/>
+        <input class="field" id="cCity" placeholder="المحافظة / المدينة" style="margin-top:10px"/>
+        <textarea class="field" id="cAddress" placeholder="العنوان بالتفصيل" style="margin-top:10px;min-height:80px"></textarea>
+
+        <div class="sideCard" style="margin-top:10px">
+          <div class="muted small" style="margin-bottom:8px">شركة الشحن</div>
+          <input class="field" id="shipCompany" placeholder="اكتب اسم شركة الشحن" />
+        </div>
+
+        <div class="row2" style="margin-top:12px">
+          <button class="btn" id="backToCart">رجوع للسلة</button>
+          <button class="primary" id="sendWA">إرسال على واتساب</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <script>
+    // Fallback close handlers (حتى لو app.js لم يعمل لأي سبب)
+    (function(){
+      const pairs = [
+        ["closeCart","cartDrawer"],["cartBg","cartDrawer"],
+        ["closeFilters","filtersDrawer"],["filtersBg","filtersDrawer"],
+        ["closeCheckout","checkoutModal"],["checkoutBg","checkoutModal"],
+        ["closeProduct","productModal"],["productBg","productModal"]
+      ];
+      const close = (targetId)=>{
+        const el=document.getElementById(targetId);
+        if(!el) return;
+        el.classList.remove('open');
+        el.setAttribute('aria-hidden','true');
+      };
+      pairs.forEach(([btnId,targetId])=>{
+        const b=document.getElementById(btnId);
+        if(!b) return;
+        const h=(e)=>{ e.preventDefault(); close(targetId); };
+        b.addEventListener('click',h);
+        b.addEventListener('touchstart',h,{passive:false});
+      });
+    })();
+  </script>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
+
+  <script src="firebase-config.js?v=22" onload="__JK_OK('firebase-config.js')" onerror="__JK_ERR('firebase-config.js')"></script>
+  <script src="install.js?v=22" onload="__JK_OK('install.js')" onerror="__JK_ERR('install.js')"></script>
+  <script src="app.js?v=22" onload="__JK_OK('app.js')" onerror="__JK_ERR('app.js')"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js?v=22").then((reg)=>{
+        // حاول تحدّث مباشرة
+        try{ reg.update(); }catch(e){}
+
+        // لو في نسخة جديدة جاهزة فعّلها فوراً
+        const kick = () => {
+          if(reg.waiting){
+            try{ reg.waiting.postMessage('SKIP_WAITING'); }catch(e){}
+          }
+        };
+        kick();
+
+        reg.addEventListener('updatefound', ()=>{
+          const sw = reg.installing;
+          if(!sw) return;
+          sw.addEventListener('statechange', ()=>{ if(sw.state==='installed') kick(); });
+        });
+
+        navigator.serviceWorker.addEventListener("controllerchange", ()=>{ window.location.reload(); });
+      }).catch(()=>{});
+    }
+  </script>
+
+  <script>
+    (function(){
+      const links = document.getElementById('adminLinks');
+      const logo = document.querySelector('.logo');
+      if(!links || !logo) return;
+      const qs = new URLSearchParams(location.search);
+      if(qs.get('admin')==='1'){ links.style.display='inline'; return; }
+      let taps=0; let t=null;
+      logo.style.cursor='pointer';
+      logo.addEventListener('click', ()=>{
+        taps++;
+        clearTimeout(t);
+        t=setTimeout(()=>taps=0, 1200);
+        if(taps>=7){
+          links.style.display = (links.style.display==='none'?'inline':'none');
+          taps=0;
+        }
+      });
+    })();
+  </script>
+
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" hidden>
+    <button class="lbClose" id="lbClose" type="button" aria-label="إغلاق" onclick="window.__closeLightbox && window.__closeLightbox()">×</button>
+    <img id="lbImg" alt=""/>
+  </div>
+
+  <!-- WhatsApp floating button -->
+  <a id="waFloat" href="#" target="_blank" rel="noreferrer" aria-label="WhatsApp" style="position:fixed;bottom:84px;right:14px;z-index:120;display:none">
+    <span style="display:inline-flex;align-items:center;gap:10px;border-radius:999px;padding:12px 14px;background:#0b2;box-shadow:0 12px 30px rgba(0,0,0,.18);color:#fff;font-weight:900;border:1px solid rgba(255,255,255,.25)">واتساب</span>
+  </a>
+</body>
+</html>
